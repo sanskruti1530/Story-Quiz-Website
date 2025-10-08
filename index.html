@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Shadow Agent's Ledger</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS to enhance the dark, spy-thriller aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Dark background for a mysterious theme */
+            background-color: #111827; 
+            background-image: radial-gradient(circle at center, #1f2937 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        .container {
+            max-width: 768px;
+            /* Dark card background */
+            background-color: #1f2937;
+            /* Subtle blue glow/border */
+            border: 1px solid #374151; 
+        }
+        
+        /* Loading animation */
+        .loading-dots span {
+            animation: bounce 0.6s infinite alternate;
+        }
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        /* Styling for the Story Container */
+        .story-box {
+            background-color: #111827; /* Very dark background for the text area */
+            border-color: #374151;
+            /* Inner shadow to give depth */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6); 
+            color: #d1d5db; /* Light gray text */
+        }
+        
+        /* Style the main title */
+        #app-container h1 {
+            color: #f9fafb;
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.5); /* Subtle blue glow */
+        }
+
+        /* Style the option buttons */
+        .option-btn {
+            background-color: #374151; /* Dark option button */
+            color: #d1d5db;
+            border-color: #4b5563;
+        }
+        .option-btn:hover:not(:disabled) {
+            background-color: #4b5563;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.5); /* Blue hover glow */
+        }
+        
+        /* Style feedback colors */
+        .text-green-600 { color: #34d399; }
+        .text-red-600 { color: #f87171; }
+        
+        /* Status text for quiz availability */
+        .quiz-status-active { color: #34d399; }
+        .quiz-status-inactive { color: #f87171; }
+        
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app-container" class="container p-6 md:p-10 rounded-xl shadow-2xl w-full">
+        
+        <h1 class="text-3xl font-extrabold text-center mb-6">The Shadow Agent's Ledger 🕵️</h1>
+
+        <!-- Content Area: Will switch between Story, Loading, Quiz, and Results -->
+        <div id="content-area">
+            <!-- Content rendered by JavaScript -->
+        </div>
+
+    </div>
+
+    <script>
+        // --- Hardcoded Quiz Data for offline/testing use ---
+        
+        // Quiz data for the first story: "The Clock Tower Key" (Index 0)
+        const HARDCODED_QUIZ_DATA_1 = [
+            {
+                "question": "On what day did Elara receive the mysterious parcel?",
+                "options": ["Monday", "Tuesday", "Wednesday", "Friday"],
+                "correctAnswer": "Tuesday"
+            },
+            {
+                "question": "The key inside the parcel was made of which material?",
+                "options": ["Polished silver", "Dark brass", "Aged iron", "Polished gold"],
+                "correctAnswer": "Dark brass"
+            },
+            {
+                "question": "The map highlighted which abandoned building?",
+                "options": ["The Old City Hall", "The Blackwood Clock Tower", "The Central Bank Vault", "The Financial District Library"],
+                "correctAnswer": "The Blackwood Clock Tower"
+            },
+            {
+                "question": "The highlighted building closed down in what year?",
+                "options": ["1992", "2001", "1998", "2005"],
+                "correctAnswer": "1998"
+            },
+            {
+                "question": "At what time is the deposit box beneath the bell platform accessible?",
+                "options": ["11:45 PM", "1:00 AM", "10:30 PM", "Midnight"],
+                "correctAnswer": "Midnight"
+            }
+        ];
+
+        // Quiz data for the second story: "The Astraea Descent" (Index 1)
+        const HARDCODED_QUIZ_DATA_2 = [
+            {
+                "question": "Which planet's orbit did the 'Astraea' breach?",
+                "options": ["Mars", "Earth", "Kepler-186f", "Jupiter"],
+                "correctAnswer": "Kepler-186f"
+            },
+            {
+                "question": "How many cycles ago was the ground colony established?",
+                "options": ["Two cycles", "Four cycles", "Six cycles", "Eight cycles"],
+                "correctAnswer": "Six cycles"
+            },
+            {
+                "question": "What was the name of the auxiliary shuttle Commander Jax used to land?",
+                "options": ["Voyager", "Discovery", "Pioneer", "Endeavor"],
+                "correctAnswer": "Pioneer"
+            },
+            {
+                "question": "What was the content of the last transmission received on January 14th?",
+                "options": ["A distress signal", "A repeating sequence of five clicks", "A detailed weather report", "A recording of the colony commander's voice"],
+                "correctAnswer": "A repeating sequence of five clicks"
+            },
+            {
+                "question": "The rest of the crew remaining on the Astraea were specialists in what field?",
+                "options": ["Astrodynamics", "Xenolinguistics", "Engineering", "Botany"],
+                "correctAnswer": "Xenolinguistics"
+            }
+        ];
+
+        // Quiz data for the third story: "The Eldoria Chant" (Index 2)
+        const HARDCODED_QUIZ_DATA_3 = [
+            {
+                "question": "The city of Eldoria is rumored to be built entirely of what two materials?",
+                "options": ["Silver and Bronze", "Obsidian and Gold", "Marble and Copper", "Granite and Iron"],
+                "correctAnswer": "Obsidian and Gold"
+            },
+            {
+                "question": "How many years did Dr. Lena Rodriguez spend searching for the oral traditions?",
+                "options": ["Three years", "Five years", "Seven years", "Ten years"],
+                "correctAnswer": "Seven years"
+            },
+            {
+                "question": "The final piece of the puzzle must be recited on the night of the full moon in which month?",
+                "options": ["April", "June", "August", "September"],
+                "correctAnswer": "June"
+            },
+            {
+                "question": "What was the shape of one of the distinct landmarks described in the chant?",
+                "options": ["A waterfall shaped like a serpent", "A rock formation shaped like a jaguar", "A river bending like a crescent moon", "A cave entrance shaped like a bird"],
+                "correctAnswer": "A waterfall shaped like a serpent"
+            },
+            {
+                "question": "Where did Lena plan to arrive by the beginning of the rainy season?",
+                "options": ["The Amazon River Delta", "The Peruvian Highlands", "The Xingu River", "The Andes Mountains"],
+                "correctAnswer": "The Xingu River"
+            }
+        ];
+
+        // Map of story index to its associated quiz data
+        const ALL_QUIZ_DATA = {
+            0: HARDCODED_QUIZ_DATA_1,
+            1: HARDCODED_QUIZ_DATA_2,
+            2: HARDCODED_QUIZ_DATA_3
+        };
+
+        // --- Story Content Storage ---
+        const ALL_STORIES = [
+            // Story 1: The Clock Tower Key
+            `Elara, a former cryptographer turned private investigator, received a mysterious parcel on Tuesday morning.
+            Inside was a single vintage key, made of dark brass, wrapped in a faded map of the city's old financial district.
+            The map highlighted the abandoned Blackwood Clock Tower, which closed down in 1998 after the great blackout.
+            She recognized the key as belonging to a security deposit box often used by her former colleague, Agent Kael, who vanished three years ago.
+            The deposit box was located not in a bank, but in a hidden vault beneath the clock tower's main bell platform, accessible only at midnight.
+            Elara immediately packed her tools and planned to be at the clock tower by 11:45 PM. Her mission was clear: find Kael's final message.`,
+
+            // Story 2: The Astraea Descent
+            `The spaceship 'Astraea' breached the orbit of Kepler-186f, a planet bathed in red starlight. Commander Jax noted the strange lack of radio chatter from the ground colony, which was established six cycles ago. The last transmission, received on January 14th, simply contained a repeating sequence of five clicks. Jax decided to land the auxiliary shuttle, 'Pioneer', near the designated central research dome. He took only his environmental suit and a modified sensor array. The rest of the crew, four specialists in xenolinguistics, remained on the Astraea, monitoring for any anomalies.`,
+
+            // Story 3: The Eldoria Chant
+            `Deep in the Amazonian basin lies the city of Eldoria, rumored to be built entirely of obsidian and gold. Dr. Lena Rodriguez spent seven years searching for the oral traditions that could unlock its location. She finally found a tribe in the Peruvian highlands who possessed the final piece of the puzzle: a chant that must be recited on the night of the full moon in June. The chant described two distinct landmarks: a waterfall shaped like a serpent and a triple-trunked mahogany tree. Lena immediately charted a course for the Xingu River, planning to arrive by the beginning of the rainy season.`
+        ];
+        
+        // --- Global State ---
+        let currentStoryIndex = 0; 
+        let currentStory = ALL_STORIES[currentStoryIndex].trim(); 
+        
+        let quizData = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        // --- TIMER STATE ---
+        let timerInterval = null;
+        let timeLeft = 60; // 60 seconds for the entire quiz
+        let quizCompletedByTimeout = false; // Flag to check if quiz ended prematurely
+
+        // UI Element References
+        const contentArea = document.getElementById('content-area');
+        
+        // --- Utility Functions ---
+
+        /**
+         * Cycles to the next story, resets state, and re-renders the story view.
+         */
+        function cycleStory() {
+            currentStoryIndex = (currentStoryIndex + 1) % ALL_STORIES.length;
+            currentStory = ALL_STORIES[currentStoryIndex].trim();
+            // Reset quiz state to prevent accidentally starting with stale data
+            quizData = [];
+            currentQuestionIndex = 0;
+            score = 0;
+            renderView('story');
+        }
+
+        /**
+         * Renders the current view (story, quiz, results, or loading).
+         * @param {string} view - 'story', 'loading', 'quiz', or 'results'.
+         */
+        function renderView(view) {
+            contentArea.innerHTML = '';
+            // Stop the timer whenever we switch away from the quiz view
+            if (view !== 'quiz') {
+                stopQuizTimer();
+            }
+            switch (view) {
+                case 'story':
+                    renderStoryView();
+                    break;
+                case 'loading':
+                    renderLoadingView();
+                    break;
+                case 'quiz':
+                    renderQuizView();
+                    break;
+                case 'results':
+                    renderResultsView();
+                    break;
+                default:
+                    renderStoryView();
+            }
+        }
+        
+        // --- Timer Functions ---
+        
+        function startQuizTimer() {
+            // Only start the timer if it's the very first question
+            if (timerInterval === null && currentQuestionIndex === 0) {
+                timeLeft = 60; // Reset time
+                quizCompletedByTimeout = false; // Reset flag
+                
+                timerInterval = setInterval(() => {
+                    const timerEl = document.getElementById('quiz-timer');
+                    if (timerEl) {
+                        timeLeft--;
+                        timerEl.textContent = `Time: ${timeLeft}s`;
+                        
+                        // Change color based on remaining time (Dark Theme Colors)
+                        timerEl.classList.remove('bg-green-600', 'bg-yellow-600', 'bg-red-600', 'text-white', 'shadow-md');
+                        if (timeLeft > 30) {
+                            timerEl.classList.add('bg-green-600', 'text-white');
+                        } else if (timeLeft > 10) {
+                            timerEl.classList.add('bg-yellow-600', 'text-white');
+                        } else {
+                            timerEl.classList.add('bg-red-600', 'text-white');
+                        }
+                        timerEl.classList.add('shadow-md');
+                    }
+
+                    if (timeLeft <= 0) {
+                        stopQuizTimer();
+                        quizCompletedByTimeout = true;
+                        renderView('results');
+                    }
+                }, 1000);
+            }
+        }
+        
+        function stopQuizTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+        
+        // --- View Rendering Functions ---
+
+        function renderStoryView() {
+            // Logic to determine if the quiz button should be active
+            const isQuizEnabled = ALL_QUIZ_DATA[currentStoryIndex] !== undefined;
+            const statusClass = isQuizEnabled ? 'quiz-status-active' : 'quiz-status-inactive';
+            const statusText = isQuizEnabled ? 'Quiz Active' : 'Quiz Unavailable';
+            
+            contentArea.innerHTML = `
+                <div class="space-y-6">
+                    <h2 class="text-xl font-bold text-gray-200 border-b border-gray-600 pb-2 flex justify-between items-center">
+                        <span>The Briefing: Story ${currentStoryIndex + 1} of ${ALL_STORIES.length}</span>
+                        <span class="text-sm font-normal ${statusClass}">(${statusText})</span>
+                    </h2>
+                    <div class="story-box p-6 rounded-lg border shadow-inner max-h-96 overflow-y-auto">
+                        <p class="whitespace-pre-line leading-relaxed">${currentStory}</p>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button id="cycle-story-btn" class="w-1/2 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-300 transform hover:scale-[1.02]">
+                            Cycle Story
+                        </button>
+                        <button 
+                            id="start-quiz-btn" 
+                            class="w-1/2 font-semibold py-3 px-4 rounded-lg shadow-md transition duration-300 transform hover:scale-[1.02] ${isQuizEnabled ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}"
+                            ${isQuizEnabled ? '' : 'disabled'}
+                        >
+                            Start Quiz (Test Your Memory)
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('cycle-story-btn').addEventListener('click', cycleStory);
+            if (isQuizEnabled) {
+                document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+            }
+        }
+
+        function renderLoadingView() {
+            contentArea.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-64">
+                    <div class="loading-dots text-4xl text-blue-500">
+                        <span>.</span><span>.</span><span>.</span>
+                    </div>
+                    <p class="mt-4 text-gray-400 font-medium">Downloading encrypted data...</p>
+                </div>
+            `;
+        }
+
+        function renderResultsView() {
+            const totalQuestions = quizData.length;
+            const percentage = (score / totalQuestions) * 100;
+            let resultMessage = 'Mission Successful. Excellent Recall.';
+            let resultColor = 'text-green-500';
+
+            if (quizCompletedByTimeout) {
+                resultMessage = 'Time Expired. Review the Briefing.';
+                resultColor = 'text-yellow-500';
+            } else if (percentage < 50) {
+                resultMessage = 'Mission Failed. Review the Briefing.';
+                resultColor = 'text-red-500';
+            } else if (percentage < 80) {
+                resultMessage = 'Mission Complete. Minor details missed.';
+                resultColor = 'text-orange-400';
+            }
+
+            contentArea.innerHTML = `
+                <div class="text-center space-y-8 p-6 bg-[#111827] rounded-lg shadow-inner border border-gray-600">
+                    <h2 class="text-3xl font-bold text-gray-100">Operation Debrief</h2>
+                    
+                    <div class="w-32 h-32 mx-auto rounded-full flex items-center justify-center shadow-lg transition duration-500 
+                         ${resultColor.includes('red') ? 'bg-red-900 border-red-500 border-4' : ''}
+                         ${resultColor.includes('green') ? 'bg-green-900 border-green-500 border-4' : ''}
+                         ${resultColor.includes('yellow') ? 'bg-yellow-900 border-yellow-500 border-4' : ''}
+                         ${resultColor.includes('orange') ? 'bg-orange-900 border-orange-500 border-4' : ''}"
+                    >
+                        <p class="text-3xl font-extrabold text-white">${score}/${totalQuestions}</p>
+                    </div>
+
+                    <p class="text-xl font-semibold ${resultColor}">${resultMessage}</p>
+                    <button id="restart-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow-xl transition duration-300 transform hover:scale-[1.02]">
+                        Restart and Review New Briefing
+                    </button>
+                </div>
+            `;
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                // Reset state and cycle to next story
+                cycleStory(); 
+            });
+        }
+        
+        function renderQuizView() {
+            if (currentQuestionIndex >= quizData.length) {
+                renderView('results');
+                return;
+            }
+            
+            // Start or continue the timer
+            startQuizTimer(); 
+
+            const q = quizData[currentQuestionIndex];
+            const qNum = currentQuestionIndex + 1;
+
+            let optionsHtml = q.options.map((option, index) => `
+                <button 
+                    data-answer="${option}"
+                    class="option-btn w-full text-left p-4 rounded-lg border transition duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 my-2 disabled:opacity-70 disabled:shadow-none"
+                >
+                    <span class="font-bold mr-2 text-blue-400">${String.fromCharCode(65 + index)}.</span> ${option}
+                </button>
+            `).join('');
+            
+            // Initial timer class
+            const initialTimerColor = (timeLeft > 30) ? 'bg-green-600' : (timeLeft > 10 ? 'bg-yellow-600' : 'bg-red-600');
+
+            contentArea.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center border-b border-gray-600 pb-3 mb-4">
+                        <h2 class="text-xl font-bold text-gray-200">Question ${qNum} of ${quizData.length}</h2>
+                        <div id="quiz-timer" class="timer-display ${initialTimerColor} text-white shadow-lg">${timeLeft}s</div>
+                    </div>
+                    
+                    <p class="text-xl font-medium text-gray-100">${q.question}</p>
+                    
+                    <div id="options-container" class="space-y-3">
+                        ${optionsHtml}
+                    </div>
+
+                    <div id="feedback" class="h-8 text-center text-lg font-bold"></div>
+                    <button id="next-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow-xl transition duration-300 hidden disabled:bg-gray-400 disabled:shadow-none" disabled>
+                        Confirm Answer & Proceed
+                    </button>
+                </div>
+            `;
+
+            document.querySelectorAll('.option-btn').forEach(button => {
+                button.addEventListener('click', handleAnswer);
+            });
+            document.getElementById('next-btn').addEventListener('click', nextQuestion);
+        }
+        
+        // --- Quiz Logic Functions ---
+
+        async function startQuiz() {
+            // Fetch the hardcoded data for the current story index
+            quizData = ALL_QUIZ_DATA[currentStoryIndex]; 
+            
+            // This is now synchronous and instant
+            currentQuestionIndex = 0;
+            score = 0;
+            renderView('quiz');
+        }
+
+        function handleAnswer(event) {
+            const selectedButton = event.target.closest('.option-btn');
+            const selectedAnswer = selectedButton.dataset.answer;
+            const correctAnswer = quizData[currentQuestionIndex].correctAnswer;
+            const optionsContainer = document.getElementById('options-container');
+            const feedbackEl = document.getElementById('feedback');
+            const nextBtn = document.getElementById('next-btn');
+            
+            // Stop the timer while the user reviews the answer
+            stopQuizTimer(); 
+
+            // Disable all options
+            optionsContainer.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:bg-blue-100', 'hover:shadow-lg');
+                
+                // Highlight correct answer in green
+                if (btn.dataset.answer === correctAnswer) {
+                    btn.classList.add('bg-green-800', 'text-white', 'border-green-500', 'shadow-xl');
+                } else {
+                    btn.classList.add('opacity-40'); // Dim incorrect options
+                }
+            });
+
+            // Check if selected answer is correct
+            if (selectedAnswer === correctAnswer) {
+                score++;
+                selectedButton.classList.remove('opacity-40');
+                selectedButton.classList.add('bg-green-600', 'text-white', 'border-green-400');
+                feedbackEl.innerHTML = '<span class="text-green-500">CORRECT! Signal confirmed.</span>';
+            } else {
+                selectedButton.classList.remove('opacity-40');
+                selectedButton.classList.add('bg-red-600', 'text-white', 'border-red-400');
+                feedbackEl.innerHTML = '<span class="text-red-500">INCORRECT! Data corruption detected.</span>';
+            }
+            
+            // Show the next button
+            nextBtn.classList.remove('hidden');
+            nextBtn.disabled = false;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            renderView('quiz');
+        }
+        
+        // --- Initial Load ---
+        renderView('story');
+
+    </script>
+</body>
+</html>
